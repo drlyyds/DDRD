@@ -1,0 +1,47 @@
+dataset: "DailyTalk"
+
+# 数据集与路径配置
+path:
+  #corpus_path: "/home/xxx/speech-datasets/en/dailytalk/"   # 原始数据集根目录(这是服务器的路径)
+  corpus_path: "xxxxx"
+  sub_dir_name: "data"   # 数据所在子目录（如 corpus_path/data）
+  lexicon_path: "lexicon/librispeech-lexicon.txt"  ## 发音词典路径（用于文本→音素转换）
+  raw_path: "./raw_data/DailyTalk"  # 原始数据缓存路径（如 WAV 文件，WAV文件就是音频文件）  #这些原始数据可能是从语料库中选取出来的一部分，或者是在数据处理过程中暂时保存的未经处理的原始文件，比如特定实验或任务所使用的原始语音文件。这些数据通常会在后续的处理流程中被进一步处理和转换。
+  preprocessed_path: "./preprocessed_data/DailyTalk"  # 预处理后特征存储路径
+
+#预处理全局配置
+preprocessing:
+  speaker_embedder: "none" # support 'none', 'DeepSpeaker'  # 说话人嵌入方法（可选 'none'、'DeepSpeaker'），DeepSpeaker：使用预训练模型生成说话人嵌入向量（需额外下载模型权重），若使用 DeepSpeaker，需确保数据集中每个样本包含说话人标签。
+  speaker_embedder_cuda: False # since it's too large to load in a single GPU # 是否使用 GPU 加速说话人嵌入计算
+  val_size: 32  # 验证集样本数
+  #文本预处理
+  text:
+    text_cleaners: ["english_cleaners"]  # 文本清洗规则，标准英文清洗（去除标点、转换为小写、处理特殊符号）。
+    language: "en"  #指定文本语言，影响音素集和清洗规则（如中文需分词）
+  #音频预处理
+  audio:
+    trim_top_db: 23   #静音裁剪阈值（dB），假设环境噪声的强度是 30 dB，设置 trim_top_db: 23。那么只要音频中某个部分的声音强度在 30 dB 到 53 dB（30 dB + 23 dB）之间，就会被判定为静音并裁剪掉；只有声音强度超过 53 dB 的部分才会被保留。
+    sampling_rate: 22050  # 音频采样率（Hz）常见值：22050 Hz（语音处理常用）、44100 Hz（音乐）。需与声码器输入要求一致（如 HiFi-GAN 支持 22050 Hz）
+    max_wav_value: 32768.0  #音频振幅最大值（16 位 PCM 为 32768），音频归一化的基准值
+  #短时傅里叶变换（STFT）参数
+  stft:
+    filter_length: 1024  # FFT 点数（决定频率分辨率），，通常为 512、1024、2048，数值越大频率分辨率越高。需与 mel.n_mel_channels 匹配（如 80 通道对应 1024）
+    hop_length: 256   #帧移（决定时间分辨率）  典型值：filter_length // 4（如 1024 → 256）。 影响频谱时间轴的密集程度（值越小，时间分辨率越高）。
+    win_length: 1024   #窗口长度（通常等于 filter_length或设置为 filter_length * 0.8）
+  #梅尔频谱参数
+  mel:
+    n_mel_channels: 80  #梅尔通道数，影响模型输入维度（如 Tacotron2 常用 80 通道）
+    mel_fmin: 0   #最低频率（Hz）
+    mel_fmax: 8000 # please set to 8000 for HiFi-GAN vocoder, set to null for MelGAN vocoder  ------最高频率（Hz），需根据声码器调整
+
+  #音高与能量特征
+  pitch:
+    feature: "phoneme_level" # support 'phoneme_level' or 'frame_level'  # 特征计算级别（'phoneme_level' 或 'frame_level'）phoneme_level：将音高 / 能量值聚合到音素级别（减少噪声）。frame_level：逐帧计算（保留细节但噪声更多）。
+    normalization: True   # 是否归一化到 0-1 范围
+  energy:
+    feature: "phoneme_level" # support 'phoneme_level' or 'frame_level'
+    normalization: True
+
+  #持续时间参数
+  duration:
+    beta_binomial_scaling_factor: 1.0   # 用来控制 Beta-Binomial 分布的 “尖锐度” 或 “平滑度”。数值越大，分布越集中；数值越小，分布越平缓。  作用在为每条语音生成注意力先验矩阵

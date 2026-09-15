@@ -1,0 +1,20 @@
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Local environments and editor files
+.venv/
+venv/
+.idea/
+.vscode/
+
+# Training data and generated outputs
+code/raw_data/
+code/preprocessed_data/
+code/output/
+code/checkpoints/
+code/*.log
+
+# OS files
+.DS_Store
+Thumbs.db
